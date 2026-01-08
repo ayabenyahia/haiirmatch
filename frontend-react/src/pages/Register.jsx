@@ -1,6 +1,3 @@
-// Register Page - HairMatch
-// Author: Aya Benyahia
-
 import { useState } from "react";
 import Layout, { colors } from "../components/Layout";
 import { styles as s } from "../components/UI";

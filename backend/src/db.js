@@ -1,6 +1,3 @@
-// Database Connection - HairMatch
-// Author: Aya Benyahia
-
 const mysql = require("mysql2/promise");
 require("dotenv").config();
 
@@ -13,4 +10,3 @@ const pool = mysql.createPool({
 });
 
 module.exports = pool;
-
