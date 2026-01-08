@@ -1,0 +1,46 @@
+[33m7f5ef81[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32manas[m[33m)[m feat(backend): add auto-migration for responses table columns
+[33me52ec0f[m feat(backend): add POST /ratings for client reviews
+[33me9e27f8[m feat(backend): add GET /hairdressers/:id/reviews
+[33m41beec0[m feat(backend): add GET /hairdressers and /hairdressers/top
+[33m4b79fbf[m feat(backend): add PUT /users/:id for profile update
+[33m33f1ee4[m feat(backend): add POST /responses for hairdresser decisions
+[33m739f0a2[m feat(backend): add POST /upload for photo uploads
+[33m9634790[m feat(backend): add GET /requests/:id and GET /my-requests
+[33me24269d[m feat(backend): add POST/GET /requests endpoints
+[33m6e38d68[m feat(backend): add MySQL database connection pool
+[33m7701ea8[m feat(backend): setup Express server with Multer file upload config
+[33m979427e[m chore(backend): init backend project with package.json
+[33md884685[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m Merge pull request #15 from hibaslaoui/hiba
+[33maf3e322[m[33m ([m[1;31morigin/hiba[m[33m, [m[1;32mhiba[m[33m)[m feat(hairdresser): complete Hairdresser with accept/refuse and profile
+[33mfc07655[m feat(hairdresser): create Hairdresser page - basic structure
+[33m110ec96[m feat(client): complete ClientExplore with reviews and Top 3 filter
+[33mea92fe0[m feat(client): create ClientExplore page - basic search
+[33m91c8184[m feat(client): complete ClientRequest with rating system and styling
+[33md59b1de[m feat(client): add photo upload and request creation
+[33m9bb180a[m feat(client): create ClientRequest page - basic structure
+[33mec91648[m feat: create App.jsx with React Router routes
+[33ma46779b[m feat: add API utility for fetch requests
+[33m26c5e63[m style: add global CSS styles with color palette
+[33m20e3768[m feat: create React entry point (main.jsx)
+[33m2cc138f[m feat: add index.html entry point
+[33m11a06b2[m chore: add Vite configuration
+[33ma78a76f[m chore: init frontend project with package.json
+[33m5ee999b[m Merge pull request #14 from ayabenyahia/aya
+[33ma54b482[m[33m ([m[1;31morigin/aya[m[33m, [m[1;32maya[m[33m)[m fix: sync with final project files
+[33m1e91bf3[m feat(backend): add /login endpoint with password verification
+[33mbe2ffc1[m feat(backend): add /register endpoint with password hashing
+[33m969f88b[m feat(backend): setup Express server with CORS
+[33ma0adc2e[m feat(backend): create database connection module
+[33m4e133e2[m style(auth): integrate Layout and full styling into Register page
+[33m310ba16[m feat(auth): add Register API call with success/error handling
+[33m3afe9d8[m feat(auth): add Register form fields with state management
+[33mbbc7b3f[m feat(auth): create basic Register page structure
+[33m09d2c98[m style(auth): integrate Layout and styling into Login page
+[33m842731f[m feat(ui): create UI component with shared form styles
+[33m6c3054b[m feat(ui): create Layout component with Header and Footer
+[33m84f6c64[m feat(auth): add Login API call with localStorage and redirect
+[33m9568f18[m feat(auth): add Login form fields and state management
+[33m5aed93e[m feat(auth): create basic Login page structure
+[33m55e35a8[m Add .gitignore file for Node.js project
+[33mf90964d[m Enhance README with project overview and features
+[33m122a523[m Initial commit
