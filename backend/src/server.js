@@ -106,46 +106,42 @@ app.put("/users/:id", async (req, res) => {
   } catch (err) { res.status(500).json({ error: "Erreur mise à jour profil" }); }
 });
 
-/**
- * GET /hairdressers?city=X - list hairdressers by city with ratings
- */
+// GET /hairdressers?city=X
 app.get("/hairdressers", async (req, res) => {
   try {
     const { city } = req.query;
     if (!city) return res.status(400).json({ error: "city obligatoire" });
-
-    const [rows] = await db.query(`
-      SELECT u.id, u.name, u.city, ROUND(AVG(r.stars),1) AS rating, COUNT(r.id) AS total_reviews
-      FROM users u
-      LEFT JOIN ratings r ON r.hairdresser_id = u.id
-      WHERE u.role = 'hairdresser' AND u.city = ?
-      GROUP BY u.id
-      ORDER BY rating DESC
-    `, [city]);
-
+    const [rows] = await db.query(`SELECT u.id, u.name, u.city, ROUND(AVG(r.stars),1) AS rating, COUNT(r.id) AS total_reviews FROM users u LEFT JOIN ratings r ON r.hairdresser_id = u.id WHERE u.role = 'hairdresser' AND u.city = ? GROUP BY u.id ORDER BY rating DESC`, [city]);
     res.json(rows);
-  } catch (err) {
-    res.status(500).json({ error: "Erreur chargement coiffeurs" });
-  }
+  } catch (err) { res.status(500).json({ error: "Erreur chargement coiffeurs" }); }
+});
+
+// GET /hairdressers/top
+app.get("/hairdressers/top", async (req, res) => {
+  try {
+    const [rows] = await db.query(`SELECT u.id, u.name, u.city, ROUND(AVG(r.stars),1) AS rating, COUNT(r.id) AS total_reviews FROM users u LEFT JOIN ratings r ON r.hairdresser_id = u.id WHERE u.role = 'hairdresser' GROUP BY u.id ORDER BY rating DESC`);
+    res.json(rows);
+  } catch (err) { res.status(500).json({ error: "Erreur chargement coiffeurs" }); }
 });
 
 /**
- * GET /hairdressers/top - top hairdressers globally
+ * GET /hairdressers/:id/reviews - get reviews for a hairdresser
  */
-app.get("/hairdressers/top", async (req, res) => {
+app.get("/hairdressers/:id/reviews", async (req, res) => {
   try {
+    const { id } = req.params;
+
     const [rows] = await db.query(`
-      SELECT u.id, u.name, u.city, ROUND(AVG(r.stars),1) AS rating, COUNT(r.id) AS total_reviews
-      FROM users u
-      LEFT JOIN ratings r ON r.hairdresser_id = u.id
-      WHERE u.role = 'hairdresser'
-      GROUP BY u.id
-      ORDER BY rating DESC
-    `);
+      SELECT r.stars, r.comment, r.created_at, u.name AS client_name
+      FROM ratings r
+      JOIN users u ON u.id = r.client_id
+      WHERE r.hairdresser_id = ?
+      ORDER BY r.created_at DESC
+    `, [id]);
 
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: "Erreur chargement coiffeurs" });
+    res.status(500).json({ error: "Erreur chargement avis" });
   }
 });
 
