@@ -17,22 +17,18 @@ app.use(express.json());
 
 console.log("SERVER FILE LOADED");
 
-// Uploads folder
+// Uploads
 const UPLOAD_DIR = path.join(__dirname, "..", "uploads");
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 app.use("/uploads", express.static(UPLOAD_DIR));
 
-// Multer config
+// Multer
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, UPLOAD_DIR),
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, file.fieldname + "-" + Date.now() + "-" + Math.round(Math.random() * 1e9) + ext);
-  },
+  filename: (req, file, cb) => cb(null, file.fieldname + "-" + Date.now() + "-" + Math.round(Math.random() * 1e9) + path.extname(file.originalname)),
 });
 const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
 
-// Health
 app.get("/", (req, res) => res.json({ ok: true, name: "HairMatch API" }));
 
 // POST /requests
@@ -60,8 +56,7 @@ app.get("/requests", async (req, res) => {
 // GET /requests/:id
 app.get("/requests/:id", async (req, res) => {
   try {
-    const { id } = req.params;
-    const [rows] = await db.query(`SELECT r.id, r.city, r.status, r.hair_current_photo, r.hair_wanted_photo, res.hairdresser_id, res.price, res.comment FROM requests r LEFT JOIN responses res ON res.request_id = r.id AND res.decision = 'accepted' WHERE r.id = ? LIMIT 1`, [id]);
+    const [rows] = await db.query(`SELECT r.id, r.city, r.status, r.hair_current_photo, r.hair_wanted_photo, res.hairdresser_id, res.price, res.comment FROM requests r LEFT JOIN responses res ON res.request_id = r.id AND res.decision = 'accepted' WHERE r.id = ? LIMIT 1`, [req.params.id]);
     if (!rows.length) return res.status(404).json({ error: "Demande introuvable" });
     res.json(rows[0]);
   } catch (err) { res.status(500).json({ error: "Erreur chargement demande" }); }
@@ -85,31 +80,43 @@ app.post("/upload", upload.fields([{ name: "current", maxCount: 1 }, { name: "wa
     const currentFile = req.files?.current?.[0];
     const wantedFile = req.files?.wanted?.[0];
     if (!currentFile || !wantedFile) return res.status(400).json({ error: "Deux images sont obligatoires" });
-    const currentPath = `/uploads/${currentFile.filename}`;
-    const wantedPath = `/uploads/${wantedFile.filename}`;
-    await db.query("UPDATE requests SET hair_current_photo = ?, hair_wanted_photo = ? WHERE id = ?", [currentPath, wantedPath, request_id]);
-    return res.json({ message: "Upload OK", hair_current_photo: currentPath, hair_wanted_photo: wantedPath });
+    await db.query("UPDATE requests SET hair_current_photo = ?, hair_wanted_photo = ? WHERE id = ?", [`/uploads/${currentFile.filename}`, `/uploads/${wantedFile.filename}`, request_id]);
+    return res.json({ message: "Upload OK" });
   } catch (e) { return res.status(500).json({ error: "Erreur serveur", details: e.message }); }
 });
 
-/**
- * POST /responses - hairdresser accepts/refuses a request
- */
+// POST /responses
 app.post("/responses", async (req, res) => {
   try {
     const { request_id, hairdresser_id, decision, price, comment } = req.body;
-
-    await db.query(
-      `INSERT INTO responses (request_id, hairdresser_id, decision, price, comment) VALUES (?,?,?,?,?)`,
-      [request_id, hairdresser_id, decision, price || null, comment || null]
-    );
-
+    await db.query(`INSERT INTO responses (request_id, hairdresser_id, decision, price, comment) VALUES (?,?,?,?,?)`, [request_id, hairdresser_id, decision, price || null, comment || null]);
     await db.query("UPDATE requests SET status = ? WHERE id = ?", [decision, request_id]);
-
     res.json({ message: "Réponse enregistrée" });
+  } catch (err) { res.status(500).json({ error: "Erreur réponse" }); }
+});
+
+/**
+ * PUT /users/:id - update user profile
+ */
+app.put("/users/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, city } = req.body;
+
+    if (!name || !city) {
+      return res.status(400).json({ error: "Nom et ville obligatoires" });
+    }
+
+    const [result] = await db.query("UPDATE users SET name = ?, city = ? WHERE id = ?", [name, city, id]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Utilisateur introuvable" });
+    }
+
+    res.json({ message: "Profil mis à jour", name, city });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Erreur réponse" });
+    console.error("UPDATE PROFILE ERROR:", err);
+    res.status(500).json({ error: "Erreur mise à jour profil" });
   }
 });
 
