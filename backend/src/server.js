@@ -71,6 +71,57 @@ app.post("/register", async (req, res) => {
   }
 });
 
+/**
+ * AUTH - LOGIN
+ * POST /login {email, password}
+ * Returns: {user_id, role, city, name}
+ */
+app.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Validation
+    if (!email || !password) {
+      return res.status(400).json({ error: "Champs manquants" });
+    }
+
+    // Find user
+    const [rows] = await db.query(
+      "SELECT * FROM users WHERE email = ?",
+      [email]
+    );
+
+    if (!rows.length) {
+      return res.status(401).json({ error: "Identifiants invalides" });
+    }
+
+    const user = rows[0];
+
+    // Verify password
+    const ok = await bcrypt.compare(password, user.password_hash);
+
+    if (!ok) {
+      return res.status(401).json({ error: "Identifiants invalides" });
+    }
+
+    // Return user data
+    return res.json({
+      message: "Connexion réussie",
+      user_id: user.id,
+      role: user.role,
+      city: user.city,
+      name: user.name,
+    });
+
+  } catch (e) {
+    console.error("LOGIN ERROR:", e);
+    return res.status(500).json({
+      error: "Erreur serveur",
+      details: e.message,
+    });
+  }
+});
+
 app.listen(process.env.PORT || 3000, () => {
   console.log(`API running on http://localhost:${process.env.PORT || 3000}`);
 });
