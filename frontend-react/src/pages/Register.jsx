@@ -3,6 +3,8 @@
 
 import { useState } from "react";
 
+const API = "http://localhost:3000";
+
 export default function Register() {
   const [form, setForm] = useState({ 
     name: "", 
@@ -15,6 +17,24 @@ export default function Register() {
   const [success, setSuccess] = useState(false);
 
   const update = (key, val) => setForm({ ...form, [key]: val });
+
+  const submit = async () => {
+    setMsg("");
+    try {
+      const r = await fetch(`${API}/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form)
+      });
+      const data = await r.json();
+      if (!r.ok) throw data;
+      setMsg("Compte créé avec succès !");
+      setSuccess(true);
+    } catch (e) {
+      setMsg(e?.error || "Erreur inscription");
+      setSuccess(false);
+    }
+  };
 
   return (
     <div>
@@ -39,9 +59,9 @@ export default function Register() {
         <option value="hairdresser">Professionnel (Coiffeur)</option>
       </select>
 
-      <button>Créer mon compte</button>
+      <button onClick={submit}>Créer mon compte</button>
 
-      {msg && <p>{msg}</p>}
+      {msg && <p style={{ color: success ? "green" : "red" }}>{msg}</p>}
     </div>
   );
 }
