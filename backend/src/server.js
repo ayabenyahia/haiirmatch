@@ -43,7 +43,6 @@ const upload = multer({
 app.get("/", (req, res) => res.json({ ok: true, name: "HairMatch API" }));
 
 /**
- * REQUESTS
  * POST /requests {client_id, city}
  */
 app.post("/requests", async (req, res) => {
@@ -62,6 +61,29 @@ app.post("/requests", async (req, res) => {
     );
 
     return res.status(201).json({ message: "Demande créée", request_id: result.insertId, status: "pending" });
+  } catch (e) {
+    return res.status(500).json({ error: "Erreur serveur", details: e.message });
+  }
+});
+
+/**
+ * GET /requests?city=X - hairdresser sees pending requests
+ */
+app.get("/requests", async (req, res) => {
+  try {
+    const { city } = req.query;
+    if (!city) return res.status(400).json({ error: "city est obligatoire" });
+
+    const [rows] = await db.query(
+      `SELECT r.id, r.city, r.status, r.created_at, u.name AS client_name
+       FROM requests r
+       JOIN users u ON u.id = r.client_id
+       WHERE r.city = ? AND r.status = 'pending'
+       ORDER BY r.created_at DESC`,
+      [city]
+    );
+
+    return res.json(rows);
   } catch (e) {
     return res.status(500).json({ error: "Erreur serveur", details: e.message });
   }
