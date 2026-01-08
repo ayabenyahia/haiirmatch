@@ -67,7 +67,7 @@ app.post("/requests", async (req, res) => {
 });
 
 /**
- * GET /requests?city=X - hairdresser sees pending requests
+ * GET /requests?city=X
  */
 app.get("/requests", async (req, res) => {
   try {
@@ -81,6 +81,56 @@ app.get("/requests", async (req, res) => {
        WHERE r.city = ? AND r.status = 'pending'
        ORDER BY r.created_at DESC`,
       [city]
+    );
+
+    return res.json(rows);
+  } catch (e) {
+    return res.status(500).json({ error: "Erreur serveur", details: e.message });
+  }
+});
+
+/**
+ * GET /requests/:id - request details
+ */
+app.get("/requests/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const [rows] = await db.query(`
+      SELECT 
+        r.id, r.city, r.status, r.hair_current_photo, r.hair_wanted_photo,
+        res.hairdresser_id, res.price, res.comment
+      FROM requests r
+      LEFT JOIN responses res ON res.request_id = r.id AND res.decision = 'accepted'
+      WHERE r.id = ?
+      LIMIT 1
+    `, [id]);
+
+    if (!rows.length) {
+      return res.status(404).json({ error: "Demande introuvable" });
+    }
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur chargement demande" });
+  }
+});
+
+/**
+ * GET /my-requests?client_id=X
+ */
+app.get("/my-requests", async (req, res) => {
+  try {
+    const { client_id } = req.query;
+    if (!client_id) return res.status(400).json({ error: "client_id obligatoire" });
+
+    const [rows] = await db.query(
+      `SELECT id, city, status, hair_current_photo, hair_wanted_photo, created_at
+       FROM requests
+       WHERE client_id = ?
+       ORDER BY created_at DESC`,
+      [client_id]
     );
 
     return res.json(rows);
