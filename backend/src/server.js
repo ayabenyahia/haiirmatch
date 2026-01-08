@@ -42,9 +42,7 @@ const upload = multer({
 // Health check
 app.get("/", (req, res) => res.json({ ok: true, name: "HairMatch API" }));
 
-/**
- * POST /requests {client_id, city}
- */
+// POST /requests
 app.post("/requests", async (req, res) => {
   try {
     const { client_id, city } = req.body;
@@ -66,9 +64,7 @@ app.post("/requests", async (req, res) => {
   }
 });
 
-/**
- * GET /requests?city=X
- */
+// GET /requests?city=X
 app.get("/requests", async (req, res) => {
   try {
     const { city } = req.query;
@@ -89,9 +85,7 @@ app.get("/requests", async (req, res) => {
   }
 });
 
-/**
- * GET /requests/:id - request details
- */
+// GET /requests/:id
 app.get("/requests/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -117,9 +111,7 @@ app.get("/requests/:id", async (req, res) => {
   }
 });
 
-/**
- * GET /my-requests?client_id=X
- */
+// GET /my-requests?client_id=X
 app.get("/my-requests", async (req, res) => {
   try {
     const { client_id } = req.query;
@@ -138,6 +130,36 @@ app.get("/my-requests", async (req, res) => {
     return res.status(500).json({ error: "Erreur serveur", details: e.message });
   }
 });
+
+/**
+ * POST /upload - upload photos for a request
+ */
+app.post(
+  "/upload",
+  upload.fields([{ name: "current", maxCount: 1 }, { name: "wanted", maxCount: 1 }]),
+  async (req, res) => {
+    try {
+      const { request_id } = req.body;
+      if (!request_id) return res.status(400).json({ error: "request_id obligatoire" });
+
+      const currentFile = req.files?.current?.[0];
+      const wantedFile = req.files?.wanted?.[0];
+      if (!currentFile || !wantedFile) return res.status(400).json({ error: "Deux images sont obligatoires" });
+
+      const currentPath = `/uploads/${currentFile.filename}`;
+      const wantedPath = `/uploads/${wantedFile.filename}`;
+
+      await db.query(
+        "UPDATE requests SET hair_current_photo = ?, hair_wanted_photo = ? WHERE id = ?",
+        [currentPath, wantedPath, request_id]
+      );
+
+      return res.json({ message: "Upload OK", hair_current_photo: currentPath, hair_wanted_photo: wantedPath });
+    } catch (e) {
+      return res.status(500).json({ error: "Erreur serveur", details: e.message });
+    }
+  }
+);
 
 app.listen(process.env.PORT || 3000, () => {
   console.log(`API running on http://localhost:${process.env.PORT || 3000}`);
