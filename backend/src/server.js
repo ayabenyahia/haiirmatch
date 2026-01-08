@@ -124,24 +124,50 @@ app.get("/hairdressers/top", async (req, res) => {
   } catch (err) { res.status(500).json({ error: "Erreur chargement coiffeurs" }); }
 });
 
-/**
- * GET /hairdressers/:id/reviews - get reviews for a hairdresser
- */
+// GET /hairdressers/:id/reviews
 app.get("/hairdressers/:id/reviews", async (req, res) => {
   try {
-    const { id } = req.params;
-
-    const [rows] = await db.query(`
-      SELECT r.stars, r.comment, r.created_at, u.name AS client_name
-      FROM ratings r
-      JOIN users u ON u.id = r.client_id
-      WHERE r.hairdresser_id = ?
-      ORDER BY r.created_at DESC
-    `, [id]);
-
+    const [rows] = await db.query(`SELECT r.stars, r.comment, r.created_at, u.name AS client_name FROM ratings r JOIN users u ON u.id = r.client_id WHERE r.hairdresser_id = ? ORDER BY r.created_at DESC`, [req.params.id]);
     res.json(rows);
+  } catch (err) { res.status(500).json({ error: "Erreur chargement avis" }); }
+});
+
+/**
+ * POST /ratings - client rates a hairdresser
+ */
+app.post("/ratings", async (req, res) => {
+  try {
+    const { client_id, hairdresser_id, request_id, stars, comment } = req.body;
+
+    if (!client_id || !hairdresser_id || !request_id || !stars) {
+      return res.status(400).json({ error: "Champs manquants" });
+    }
+
+    if (stars < 1 || stars > 5) {
+      return res.status(400).json({ error: "Note invalide" });
+    }
+
+    // Verify request belongs to client
+    const [reqRows] = await db.query("SELECT id FROM requests WHERE id = ? AND client_id = ?", [request_id, client_id]);
+    if (!reqRows.length) {
+      return res.status(403).json({ error: "Demande invalide" });
+    }
+
+    // Prevent double rating
+    const [existing] = await db.query("SELECT id FROM ratings WHERE request_id = ?", [request_id]);
+    if (existing.length) {
+      return res.status(409).json({ error: "Déjà notée" });
+    }
+
+    await db.query(
+      `INSERT INTO ratings (client_id, hairdresser_id, request_id, stars, comment) VALUES (?,?,?,?,?)`,
+      [client_id, hairdresser_id, request_id, stars, comment || null]
+    );
+
+    res.json({ message: "Note enregistrée" });
   } catch (err) {
-    res.status(500).json({ error: "Erreur chargement avis" });
+    console.error("RATING ERROR:", err);
+    res.status(500).json({ error: "Erreur rating" });
   }
 });
 
