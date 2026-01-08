@@ -95,28 +95,57 @@ app.post("/responses", async (req, res) => {
   } catch (err) { res.status(500).json({ error: "Erreur réponse" }); }
 });
 
-/**
- * PUT /users/:id - update user profile
- */
+// PUT /users/:id
 app.put("/users/:id", async (req, res) => {
   try {
-    const { id } = req.params;
     const { name, city } = req.body;
-
-    if (!name || !city) {
-      return res.status(400).json({ error: "Nom et ville obligatoires" });
-    }
-
-    const [result] = await db.query("UPDATE users SET name = ?, city = ? WHERE id = ?", [name, city, id]);
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: "Utilisateur introuvable" });
-    }
-
+    if (!name || !city) return res.status(400).json({ error: "Nom et ville obligatoires" });
+    const [result] = await db.query("UPDATE users SET name = ?, city = ? WHERE id = ?", [name, city, req.params.id]);
+    if (result.affectedRows === 0) return res.status(404).json({ error: "Utilisateur introuvable" });
     res.json({ message: "Profil mis à jour", name, city });
+  } catch (err) { res.status(500).json({ error: "Erreur mise à jour profil" }); }
+});
+
+/**
+ * GET /hairdressers?city=X - list hairdressers by city with ratings
+ */
+app.get("/hairdressers", async (req, res) => {
+  try {
+    const { city } = req.query;
+    if (!city) return res.status(400).json({ error: "city obligatoire" });
+
+    const [rows] = await db.query(`
+      SELECT u.id, u.name, u.city, ROUND(AVG(r.stars),1) AS rating, COUNT(r.id) AS total_reviews
+      FROM users u
+      LEFT JOIN ratings r ON r.hairdresser_id = u.id
+      WHERE u.role = 'hairdresser' AND u.city = ?
+      GROUP BY u.id
+      ORDER BY rating DESC
+    `, [city]);
+
+    res.json(rows);
   } catch (err) {
-    console.error("UPDATE PROFILE ERROR:", err);
-    res.status(500).json({ error: "Erreur mise à jour profil" });
+    res.status(500).json({ error: "Erreur chargement coiffeurs" });
+  }
+});
+
+/**
+ * GET /hairdressers/top - top hairdressers globally
+ */
+app.get("/hairdressers/top", async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT u.id, u.name, u.city, ROUND(AVG(r.stars),1) AS rating, COUNT(r.id) AS total_reviews
+      FROM users u
+      LEFT JOIN ratings r ON r.hairdresser_id = u.id
+      WHERE u.role = 'hairdresser'
+      GROUP BY u.id
+      ORDER BY rating DESC
+    `);
+
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: "Erreur chargement coiffeurs" });
   }
 });
 
